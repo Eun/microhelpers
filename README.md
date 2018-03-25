@@ -1,2 +1,2 @@
 # microhelpers
-A collection of helpers for golang applications
+A collection of helpers for golang microservice applications
