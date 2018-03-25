@@ -1,0 +1,47 @@
+{
+	"ImportPath": "github.com/Eun/microhelpers",
+	"GoVersion": "go1.10",
+	"GodepVersion": "v80",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/alecthomas/kingpin",
+			"Comment": "v2.2.6-5-ga395891",
+			"Rev": "a39589180ebd6bbf43076e514b55f20a95d43086"
+		},
+		{
+			"ImportPath": "github.com/alecthomas/template",
+			"Rev": "a0175ee3bccc567396460bf5acd36800cb10c49c"
+		},
+		{
+			"ImportPath": "github.com/alecthomas/template/parse",
+			"Rev": "a0175ee3bccc567396460bf5acd36800cb10c49c"
+		},
+		{
+			"ImportPath": "github.com/alecthomas/units",
+			"Rev": "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
+		},
+		{
+			"ImportPath": "github.com/davecgh/go-spew/spew",
+			"Comment": "v1.1.0-11-g87df7c6",
+			"Rev": "87df7c60d5820d0f8ae11afede5aa52325c09717"
+		},
+		{
+			"ImportPath": "github.com/pmezard/go-difflib/difflib",
+			"Comment": "v1.0.0",
+			"Rev": "792786c7400a136282c1664665ae0a8db921c6c2"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Comment": "v1.2.0-4-g87b1dfb",
+			"Rev": "87b1dfb5b2fa649f52695dd9eae19abe404a4308"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/require",
+			"Comment": "v1.2.0-4-g87b1dfb",
+			"Rev": "87b1dfb5b2fa649f52695dd9eae19abe404a4308"
+		}
+	]
+}
