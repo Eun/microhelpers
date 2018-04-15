@@ -2,8 +2,9 @@ package microhelpers
 
 import (
 	"net/http"
-	"os"
 	"testing"
+
+	"os"
 
 	"github.com/stretchr/testify/require"
 )
@@ -22,124 +23,66 @@ func (w *mockResponseWriter) WriteHeader(statusCode int) {
 	w.StatusCode = statusCode
 }
 
-func TestParseEnvironment(t *testing.T) {
-	t.Run("Nothing", func(t *testing.T) {
-		_, _, err := Parse(nil, http.NewServeMux())
-		require.Error(t, err)
-	})
-	t.Run("Port", func(t *testing.T) {
-		os.Setenv("APP_PORT", "8000")
-		defer os.Unsetenv("APP_PORT")
-		addresses, _, err := Parse(nil, http.NewServeMux())
+func TestParse(t *testing.T) {
+	t.Run("Default", func(t *testing.T) {
+		val, err := ParseString([]string{"config"}, []string{"config"}, "default.json", nil)
 		require.NoError(t, err)
-		require.EqualValues(t, []string{":8000"}, addresses)
+		require.Equal(t, "default.json", val)
 	})
-	t.Run("Address", func(t *testing.T) {
-		os.Setenv("APP_ADDRESS", ":8000")
-		defer os.Unsetenv("APP_ADDRESS")
-		addresses, _, err := Parse(nil, http.NewServeMux())
-		require.NoError(t, err)
-		require.EqualValues(t, []string{":8000"}, addresses)
-	})
-	t.Run("AddressAndPort", func(t *testing.T) {
-		os.Setenv("APP_ADDRESS", "127.0.0.1")
-		os.Setenv("APP_PORT", "8000")
-		defer os.Unsetenv("APP_ADDRESS")
-		defer os.Unsetenv("APP_PORT")
-		addresses, _, err := Parse(nil, http.NewServeMux())
-		require.NoError(t, err)
-		require.EqualValues(t, []string{"127.0.0.1:8000"}, addresses)
-	})
-	t.Run("AddressAndPort-Override", func(t *testing.T) {
-		os.Setenv("APP_ADDRESS", "127.0.0.1:8001")
-		os.Setenv("APP_PORT", "8000")
-		defer os.Unsetenv("APP_ADDRESS")
-		defer os.Unsetenv("APP_PORT")
-		addresses, _, err := Parse(nil, http.NewServeMux())
-		require.NoError(t, err)
-		require.EqualValues(t, []string{"127.0.0.1:8001"}, addresses)
-	})
-	t.Run("Root", func(t *testing.T) {
-		os.Setenv("APP_ROOT", "/subdir/")
-		os.Setenv("APP_PORT", "8000")
-		defer os.Unsetenv("APP_ROOT")
-		defer os.Unsetenv("APP_PORT")
 
-		mux := http.NewServeMux()
-		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(1234)
+	t.Run("Flag", func(t *testing.T) {
+		t.Run("Without Equal", func(t *testing.T) {
+			val, err := ParseString([]string{"config"}, []string{"config"}, "default.json", []string{"--config", "config.json"})
+			require.NoError(t, err)
+			require.Equal(t, "config.json", val)
 		})
-
-		addresses, handler, err := Parse(nil, mux)
-		require.NoError(t, err)
-		require.EqualValues(t, []string{":8000"}, addresses)
-
-		var buf mockResponseWriter
-		r, err := http.NewRequest(http.MethodGet, "/subdir/", nil)
-		require.NoError(t, err)
-		handler.ServeHTTP(&buf, r)
-		require.Equal(t, 1234, buf.StatusCode)
-
-		buf = mockResponseWriter{}
-		r, err = http.NewRequest(http.MethodGet, "/", nil)
-		require.NoError(t, err)
-		handler.ServeHTTP(&buf, r)
-		require.Equal(t, 404, buf.StatusCode)
-	})
-}
-
-func TestParseCommandline(t *testing.T) {
-	t.Run("Nothing", func(t *testing.T) {
-		_, _, err := Parse(nil, http.NewServeMux())
-		require.Error(t, err)
-	})
-	t.Run("Port", func(t *testing.T) {
-		addresses, _, err := Parse([]string{"--port", "8000"}, http.NewServeMux())
-		require.NoError(t, err)
-		require.EqualValues(t, []string{":8000"}, addresses)
-	})
-	t.Run("Address", func(t *testing.T) {
-		addresses, _, err := Parse([]string{"--address", ":8000"}, http.NewServeMux())
-		require.NoError(t, err)
-		require.EqualValues(t, []string{":8000"}, addresses)
-	})
-	t.Run("AddressAndPort", func(t *testing.T) {
-		addresses, _, err := Parse([]string{"--port", "8000", "--address", "127.0.0.1"}, http.NewServeMux())
-		require.NoError(t, err)
-		require.EqualValues(t, []string{"127.0.0.1:8000"}, addresses)
-	})
-	t.Run("AddressAndPort-Override", func(t *testing.T) {
-		addresses, _, err := Parse([]string{"--port", "8000", "--address", "127.0.0.1:8001"}, http.NewServeMux())
-		require.NoError(t, err)
-		require.EqualValues(t, []string{"127.0.0.1:8001"}, addresses)
-	})
-	t.Run("Root", func(t *testing.T) {
-		mux := http.NewServeMux()
-		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(1234)
+		t.Run("With Equal", func(t *testing.T) {
+			val, err := ParseString([]string{"config"}, []string{"config"}, "default.json", []string{"--config=config.json"})
+			require.NoError(t, err)
+			require.Equal(t, "config.json", val)
 		})
-
-		addresses, handler, err := Parse([]string{"--port", "8000", "--root", "/subdir/"}, mux)
-		require.NoError(t, err)
-		require.EqualValues(t, []string{":8000"}, addresses)
-
-		var buf mockResponseWriter
-		r, err := http.NewRequest(http.MethodGet, "/subdir/", nil)
-		require.NoError(t, err)
-		handler.ServeHTTP(&buf, r)
-		require.Equal(t, 1234, buf.StatusCode)
-
-		buf = mockResponseWriter{}
-		r, err = http.NewRequest(http.MethodGet, "/", nil)
-		require.NoError(t, err)
-		handler.ServeHTTP(&buf, r)
-		require.Equal(t, 404, buf.StatusCode)
+		t.Run("Second Name", func(t *testing.T) {
+			val, err := ParseString([]string{"config", "cfg"}, []string{"config"}, "default.json", []string{"--cfg=config.json"})
+			require.NoError(t, err)
+			require.Equal(t, "config.json", val)
+		})
 	})
-	t.Run("CommandLineOverridesEnvironment", func(t *testing.T) {
-		os.Setenv("APP_PORT", "6000")
-		defer os.Unsetenv("APP_PORT")
-		addresses, _, err := Parse([]string{"--port", "8000"}, http.NewServeMux())
+
+	t.Run("ShortFlag", func(t *testing.T) {
+		t.Run("Without Equal", func(t *testing.T) {
+			val, err := ParseString([]string{"c"}, []string{"config"}, "default.json", []string{"-c", "config.json"})
+			require.NoError(t, err)
+			require.Equal(t, "config.json", val)
+		})
+		t.Run("With Equal", func(t *testing.T) {
+			val, err := ParseString([]string{"c"}, []string{"config"}, "default.json", []string{"-c=config.json"})
+			require.NoError(t, err)
+			require.Equal(t, "config.json", val)
+		})
+	})
+
+	t.Run("Env", func(t *testing.T) {
+		t.Run("First Name", func(t *testing.T) {
+			os.Setenv("CONFIG", "config.json")
+			val, err := ParseString([]string{"config"}, []string{"config"}, "default.json", nil)
+			require.NoError(t, err)
+			require.Equal(t, "config.json", val)
+			os.Unsetenv("CONFIG")
+		})
+		t.Run("Second Name", func(t *testing.T) {
+			os.Setenv("CFG", "config.json")
+			val, err := ParseString(nil, []string{"config", "cfg"}, "default.json", nil)
+			require.NoError(t, err)
+			require.Equal(t, "config.json", val)
+			os.Unsetenv("CFG")
+		})
+	})
+
+	t.Run("EnvAndFlag", func(t *testing.T) {
+		os.Setenv("CONFIG", "env.json")
+		val, err := ParseString([]string{"config"}, []string{"config"}, "default.json", []string{"--config", "flag.json"})
 		require.NoError(t, err)
-		require.EqualValues(t, []string{":8000"}, addresses)
+		require.Equal(t, "flag.json", val)
+		os.Unsetenv("CONFIG")
 	})
 }
